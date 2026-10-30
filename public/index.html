@@ -1,0 +1,1256 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Ancora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* Layout concept: dark ink-navy "night sea" canvas throughout; hero + filter rail sit on the navy,
+     content cards float as lighter panels; a single hash-routed detail view replaces the grid. */
+  :root{
+    --bg:#0A1A24; --surface:#102732; --surface-2:#163444; --fg:#ECEEE8; --muted:#9FB3BA;
+    --accent:#CFA355; --accent-fg:#13222B; --border:#1E3845; --good:#5FA88B; --good-fg:#0C1A15;
+    --shadow: 0 18px 40px -20px rgba(0,0,0,.55);
+    --font-display:"Cormorant Garamond", Georgia, "Times New Roman", serif;
+    --font-body:"Work Sans", -apple-system, "Segoe UI", sans-serif;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#EEF1F1; --surface:#FFFFFF; --surface-2:#F4F6F5; --fg:#122029; --muted:#5B6E76;
+      --accent:#93711F; --accent-fg:#FFFFFF; --border:#DBE2E3; --good:#2F7A63; --good-fg:#FFFFFF;
+      --shadow: 0 16px 32px -18px rgba(18,32,41,.18);
+      color-scheme: light;
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF1F1; --surface:#FFFFFF; --surface-2:#F4F6F5; --fg:#122029; --muted:#5B6E76;
+    --accent:#93711F; --accent-fg:#FFFFFF; --border:#DBE2E3; --good:#2F7A63; --good-fg:#FFFFFF;
+    --shadow: 0 16px 32px -18px rgba(18,32,41,.18);
+    color-scheme: light;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg); color:var(--fg); font-family:var(--font-body);
+    padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px));
+    font-size:16px; line-height:1.5;
+  }
+  h1,h2,h3,.display{font-family:var(--font-display); font-weight:600; text-wrap:balance; letter-spacing:.01em;}
+  button{font-family:inherit;}
+  .wrap{max-width:1180px; margin:0 auto;}
+  .muted{color:var(--muted);}
+  .nums{font-variant-numeric: tabular-nums;}
+  a{color:inherit;}
+  [hidden]{display:none!important;}
+
+  /* ---------- header ---------- */
+  header.site{position:relative; padding-block:18px;}
+  .nav{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .brand{display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-size:1.5rem; font-weight:600;}
+  .brand svg{width:22px;height:22px;color:var(--accent);}
+  .nav-links{display:flex; gap:28px; font-size:.86rem; color:var(--muted);}
+  .nav-links a{text-decoration:none;}
+  .nav-links a:hover{color:var(--fg);}
+  .theme-btn{border:1px solid var(--border); background:transparent; color:var(--fg); border-radius:999px; padding:7px 14px; font-size:.78rem; cursor:pointer;}
+  .theme-btn:hover{border-color:var(--accent);}
+
+  /* ---------- hero / search ---------- */
+  .hero{padding-block:30px 32px;}
+  .hero h1{font-size:clamp(1.8rem, 4vw, 2.6rem); margin:0 0 20px;}
+
+  .searchbar{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:16px;
+    display:grid; grid-template-columns: 1.4fr .9fr .9fr auto; gap:12px; box-shadow:var(--shadow);
+  }
+  .field{display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .field label{font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted);}
+  .field select, .field input{
+    background:var(--surface-2); border:1px solid var(--border); color:var(--fg); border-radius:10px;
+    padding:9px 10px; font-size:.88rem; font-family:inherit; min-width:0;
+  }
+  .field select:focus, .field input:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .btn{
+    border:none; border-radius:10px; padding:11px 18px; font-size:.86rem; font-weight:600; cursor:pointer;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--accent); color:var(--accent-fg);}
+  .btn-primary:hover{filter:brightness(1.07);}
+  .btn-ghost{background:transparent; border:1px solid var(--border); color:var(--fg);}
+  .btn-ghost:hover{border-color:var(--accent);}
+  .btn-block{width:100%;}
+  .search-submit{align-self:end;}
+
+  @media (max-width: 860px){ .searchbar{grid-template-columns:1fr 1fr;} .search-submit{grid-column:1/-1;} }
+
+  /* ---------- results layout ---------- */
+  .results{display:grid; grid-template-columns:230px 1fr; gap:28px; padding-block:30px 60px; align-items:start;}
+  @media (max-width: 860px){ .results{grid-template-columns:1fr;} }
+
+  .filters{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; position:sticky; top:16px;}
+  .filters h2{font-size:1rem; margin:0 0 14px;}
+  .filter-group{margin-bottom:18px;}
+  .filter-group:last-child{margin-bottom:0;}
+  .filter-group p.label{font-size:.72rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:0 0 8px;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{border:1px solid var(--border); background:var(--surface-2); color:var(--fg); border-radius:999px; padding:5px 11px; font-size:.78rem; cursor:pointer;}
+  .chip[aria-pressed="true"]{background:var(--accent); color:var(--accent-fg); border-color:var(--accent);}
+  .range-row{display:flex; justify-content:space-between; font-size:.78rem; color:var(--muted); margin-top:6px;}
+  input[type="range"]{width:100%; accent-color:var(--accent);}
+  .stepper{display:flex; align-items:center; gap:10px;}
+  .stepper button{width:28px; height:28px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--fg); cursor:pointer;}
+  .stepper span{min-width:2ch; text-align:center;}
+
+  .results-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; gap:12px; flex-wrap:wrap;}
+  .results-head h2{font-size:1.1rem; margin:0;}
+  #count{color:var(--muted); font-size:.85rem;}
+
+  .grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:18px;}
+  @media (max-width: 680px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden;
+    cursor:pointer; transition:transform .15s ease, border-color .15s ease; display:flex; flex-direction:column;
+  }
+  .card:hover{transform:translateY(-3px); border-color:var(--accent);}
+  .card:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  .card-media{height:150px; position:relative;}
+  .card-media .tag{position:absolute; top:10px; left:10px; background:rgba(10,20,27,.72); color:#ECEEE8; font-size:.68rem; padding:4px 9px; border-radius:999px; letter-spacing:.03em;}
+  .card-media .avail{position:absolute; top:10px; right:10px; background:var(--good); color:var(--good-fg); font-size:.68rem; padding:4px 9px; border-radius:999px;}
+  .card-body{padding:14px 16px 16px; display:flex; flex-direction:column; gap:8px; flex:1;}
+  .card-body h3{font-size:1.05rem; margin:0;}
+  .card-loc{font-size:.8rem; color:var(--muted); margin:0;}
+  .specs-row{display:flex; gap:12px; flex-wrap:wrap; font-size:.76rem; color:var(--muted); margin-top:2px;}
+  .specs-row span{display:flex; align-items:center; gap:4px;}
+  .specs-row svg{width:13px; height:13px;}
+  .card-price{margin-top:auto; display:flex; justify-content:space-between; align-items:baseline; padding-top:10px; border-top:1px solid var(--border);}
+  .card-price .amount{font-family:var(--font-display); font-size:1.2rem; font-weight:600;}
+  .card-price .per{font-size:.72rem; color:var(--muted);}
+
+  .empty{padding:50px 20px; text-align:center; color:var(--muted); border:1px dashed var(--border); border-radius:16px;}
+
+  /* ---------- detail view ---------- */
+  .detail{padding-block:26px 60px;}
+  .back{display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--muted); font-size:.85rem; cursor:pointer; padding:0; margin-bottom:18px;}
+  .back:hover{color:var(--fg);}
+  .detail-grid{display:grid; grid-template-columns:1.5fr 1fr; gap:28px;}
+  @media (max-width: 900px){ .detail-grid{grid-template-columns:1fr;} }
+
+  .gallery{display:grid; grid-template-columns:2fr 1fr; grid-template-rows:1fr 1fr; gap:8px; height:340px; border-radius:16px; overflow:hidden;}
+  .gallery div:first-child{grid-row:1/3;}
+
+  .detail-head{display:flex; justify-content:space-between; gap:16px; align-items:flex-start; margin:22px 0 6px; flex-wrap:wrap;}
+  .detail-head h1{font-size:clamp(1.6rem,3vw,2.2rem); margin:0;}
+  .pill{display:inline-flex; align-items:center; gap:6px; background:var(--good); color:var(--good-fg); border-radius:999px; padding:5px 12px; font-size:.75rem; white-space:nowrap;}
+
+  .spec-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:22px 0; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:14px;}
+  @media (max-width:640px){ .spec-grid{grid-template-columns:repeat(2,1fr);} }
+  .spec-item{display:flex; flex-direction:column; gap:4px;}
+  .spec-item svg{width:17px; height:17px; color:var(--accent);}
+  .spec-item .v{font-family:var(--font-display); font-size:1.15rem; font-weight:600;}
+  .spec-item .k{font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+
+  .desc{color:var(--muted); max-width:62ch; line-height:1.7;}
+  .highlights{display:flex; flex-wrap:wrap; gap:8px; margin:16px 0;}
+  .highlights span{font-size:.78rem; border:1px solid var(--border); border-radius:999px; padding:5px 12px;}
+
+  .booking-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; position:sticky; top:16px;}
+  .booking-card .price-line{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
+  .booking-card .price-line .amount{font-family:var(--font-display); font-size:1.7rem; font-weight:600;}
+  .booking-card .price-line .per{color:var(--muted); font-size:.82rem;}
+  .trust-list{list-style:none; margin:16px 0; padding:0; display:flex; flex-direction:column; gap:9px; font-size:.82rem; color:var(--muted);}
+  .trust-list li{display:flex; gap:8px; align-items:flex-start;}
+  .trust-list svg{width:15px; height:15px; color:var(--good); flex-shrink:0; margin-top:2px;}
+
+  /* ---------- booking flow ---------- */
+  .steps{display:flex; gap:6px; margin-bottom:18px;}
+  .steps .dot{flex:1; height:4px; border-radius:4px; background:var(--border);}
+  .steps .dot.on{background:var(--accent);}
+  .step h3{margin:0 0 14px; font-size:1.05rem;}
+  .form-row{display:flex; flex-direction:column; gap:5px; margin-bottom:12px;}
+  .form-row label{font-size:.75rem; color:var(--muted);}
+  .form-row input, .form-row select{background:var(--surface-2); border:1px solid var(--border); color:var(--fg); border-radius:9px; padding:9px 10px; font-size:.88rem; font-family:inherit;}
+  .form-row input:focus, .form-row select:focus{outline:2px solid var(--accent); outline-offset:1px;}
+  .two-col{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .step-actions{display:flex; gap:10px; margin-top:16px;}
+  .recap{background:var(--surface-2); border-radius:10px; padding:12px; font-size:.84rem; color:var(--muted); margin-bottom:14px;}
+  .recap b{color:var(--fg);}
+  .lock-note{display:flex; gap:6px; align-items:center; font-size:.74rem; color:var(--muted); margin-top:12px;}
+  .lock-note svg{width:13px;height:13px;}
+  .confirm{text-align:center; padding:10px 0;}
+  .confirm svg{width:44px; height:44px; color:var(--good); margin-bottom:10px;}
+  .confirm .ref{font-family:var(--font-display); font-size:1.4rem; font-weight:600; margin:6px 0 2px;}
+
+  footer{border-top:1px solid var(--border); padding-block:28px 40px; margin-top:20px;}
+  footer .wrap{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:.8rem; color:var(--muted);}
+  footer a{text-decoration:none; color:var(--muted);}
+  footer a:hover{color:var(--fg);}
+
+  /* ---------- auth modal ---------- */
+  .modal-overlay{position:fixed; inset:0; background:rgba(6,14,19,.6); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px; max-width:380px; width:100%; box-shadow:var(--shadow); max-height:90vh; overflow:auto;}
+  .modal h2{font-size:1.3rem; margin:0 0 16px;}
+  .modal-close{float:right; background:none; border:none; color:var(--muted); font-size:1.1rem; cursor:pointer; line-height:1;}
+  .tab-row{display:flex; gap:6px; background:var(--surface-2); border-radius:10px; padding:4px; margin-bottom:18px;}
+  .tab-row button{flex:1; border:none; background:transparent; color:var(--muted); padding:8px; border-radius:8px; font-size:.82rem; cursor:pointer; font-family:inherit;}
+  .tab-row button[aria-selected="true"]{background:var(--accent); color:var(--accent-fg);}
+  .radio-row{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;}
+  .radio-opt{display:flex; align-items:flex-start; gap:8px; border:1px solid var(--border); border-radius:10px; padding:10px; cursor:pointer; font-size:.84rem;}
+  .radio-opt input{margin-top:3px;}
+  .radio-opt .t{font-weight:600;}
+  .radio-opt .d{color:var(--muted); font-size:.78rem;}
+
+  .account-chip{display:flex; align-items:center; gap:8px; border:1px solid var(--border); border-radius:999px; padding:6px 8px 6px 6px; cursor:pointer; background:transparent; color:var(--fg); font-family:inherit; font-size:.82rem;}
+  .account-chip .avatar{width:24px; height:24px; border-radius:999px; background:var(--accent); color:var(--accent-fg); display:flex; align-items:center; justify-content:center; font-size:.72rem; font-weight:700;}
+
+  /* ---------- profil ---------- */
+  .profile-grid{display:grid; grid-template-columns:260px 1fr; gap:28px; padding-block:30px 60px;}
+  @media (max-width:800px){ .profile-grid{grid-template-columns:1fr;} }
+  .profile-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; text-align:center; align-self:start;}
+  .profile-card .avatar-lg{width:64px; height:64px; border-radius:999px; background:var(--accent); color:var(--accent-fg); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:1.4rem; margin:0 auto 12px;}
+  .profile-card .role{display:inline-block; margin-top:6px; font-size:.74rem; color:var(--muted); border:1px solid var(--border); border-radius:999px; padding:3px 10px;}
+  .res-item{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--border); flex-wrap:wrap;}
+  .res-item:last-child{border-bottom:none;}
+  .res-item .name{font-family:var(--font-display); font-weight:600; font-size:1.05rem;}
+  .res-item .meta{font-size:.8rem; color:var(--muted);}
+  .badge-sample{font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); border:1px dashed var(--border); border-radius:999px; padding:3px 9px; white-space:nowrap;}
+
+  /* ---------- legal ---------- */
+  .legal-wrap{padding-block:30px 60px; max-width:760px;}
+  .legal-tabs{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; border-bottom:1px solid var(--border); padding-bottom:16px;}
+  .legal-tabs button{border:1px solid var(--border); background:var(--surface); color:var(--fg); border-radius:999px; padding:7px 14px; font-size:.8rem; cursor:pointer; font-family:inherit;}
+  .legal-tabs button[aria-selected="true"]{background:var(--accent); color:var(--accent-fg); border-color:var(--accent);}
+  .legal-content h2{font-size:1.3rem; margin:0 0 6px;}
+  .legal-content .note{font-size:.78rem; color:var(--muted); margin:0 0 20px; border-left:2px solid var(--accent); padding-left:10px;}
+  .legal-content h3{font-size:1rem; margin:22px 0 8px; color:var(--fg);}
+  .legal-content p, .legal-content li{color:var(--muted); line-height:1.7; font-size:.92rem;}
+  .legal-content ol{padding-left:1.2em;}
+  .legal-content li{margin-bottom:10px;}
+
+  /* ---------- abonnement ---------- */
+  .gate-wrap{padding-block:60px 70px; max-width:640px;}
+  .gate-wrap .kicker{text-transform:uppercase; letter-spacing:.14em; font-size:.72rem; color:var(--accent); margin:0 0 10px;}
+  .gate-wrap h1{font-size:clamp(1.8rem,4vw,2.5rem); margin:0 0 14px; max-width:22ch;}
+  .gate-wrap .sub{color:var(--muted); max-width:54ch; margin:0 0 22px; font-size:1rem;}
+  .plan-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px;}
+  @media (max-width:640px){ .plan-grid{grid-template-columns:1fr;} }
+  .plan-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px;}
+  .plan-card h3{margin:0 0 6px; font-family:var(--font-display); font-size:1.25rem;}
+  .plan-card p{margin:0 0 14px;}
+
+  /* ---------- carrousels (visuels d'illustration qui défilent) ---------- */
+  .card-media .slide{position:absolute; inset:0; opacity:0; animation:slideFade 14s infinite;}
+  .card-media .slide:nth-child(1){animation-delay:0s;}
+  .card-media .slide:nth-child(2){animation-delay:3.5s;}
+  .card-media .slide:nth-child(3){animation-delay:7s;}
+  .card-media .slide:nth-child(4){animation-delay:10.5s;}
+  @keyframes slideFade{
+    0%{opacity:0;} 3%{opacity:1;} 22%{opacity:1;} 26%{opacity:0;} 100%{opacity:0;}
+  }
+  .gallery{position:relative; height:340px; border-radius:16px; overflow:hidden; background:var(--surface-2);}
+  .gallery .gslide{position:absolute; inset:0; opacity:0; transition:opacity .6s ease;}
+  .gallery .gslide.on{opacity:1;}
+  .gallery-arrow{position:absolute; top:50%; transform:translateY(-50%); width:36px; height:36px; border-radius:999px; border:none; background:rgba(10,20,27,.55); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:2;}
+  .gallery-arrow:hover{background:rgba(10,20,27,.8);}
+  .gallery-arrow.left{left:12px;}
+  .gallery-arrow.right{right:12px;}
+  .gallery-dots{position:absolute; bottom:12px; left:0; right:0; display:flex; justify-content:center; gap:6px; z-index:2;}
+  .gallery-dots .gdot{width:7px; height:7px; border-radius:999px; background:rgba(255,255,255,.45); cursor:pointer; border:none; padding:0;}
+  .gallery-dots .gdot.on{background:#fff;}
+</style>
+
+<header class="site wrap">
+  <nav class="nav">
+    <a href="#" class="brand" id="brandHome" style="text-decoration:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2v13M7 7h10M4 20c2 1 4 1 6 0s4-1 6 0 4 1 6 0" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15l-2 5M18 15l2 5" stroke-linecap="round"/></svg>
+      Ancora
+    </a>
+    <div class="nav-links">
+      <a href="#abonnement" id="subscribeLink">Abonnement</a>
+      <a href="#admin" id="adminLink" hidden>Administration</a>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="theme-btn" id="themeToggle" type="button">Mode clair</button>
+      <div id="accountArea"></div>
+    </div>
+  </nav>
+</header>
+
+<div class="modal-overlay" id="authOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <button class="modal-close" id="authClose" type="button" aria-label="Fermer">&times;</button>
+    <h2 id="authTitle">Accéder à mon compte</h2>
+    <div class="tab-row">
+      <button type="button" id="tabLogin" aria-selected="true">Se connecter</button>
+      <button type="button" id="tabSignup" aria-selected="false">Créer un compte</button>
+    </div>
+    <div id="authBody"></div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <section class="gate-wrap" id="view-subscribe" hidden>
+    <div id="subscribeContent"></div>
+  </section>
+
+  <section class="hero" id="view-home" hidden>
+    <h1>Le catalogue Ancora</h1>
+
+    <form class="searchbar" id="searchForm">
+      <div class="field">
+        <label for="f-dest">Destination</label>
+        <select id="f-dest">
+          <option value="">Toutes les zones</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-guests">Invités</label>
+        <input type="number" id="f-guests" min="1" max="20" placeholder="Nombre">
+      </div>
+      <div class="field">
+        <label for="f-type">Type</label>
+        <select id="f-type">
+          <option value="">Tous</option>
+          <option value="Moteur">Moteur</option>
+          <option value="Voile">Voile</option>
+        </select>
+      </div>
+      <button class="btn btn-primary search-submit" type="submit">Rechercher</button>
+    </form>
+  </section>
+
+  <section class="results" id="view-results" hidden>
+    <aside class="filters">
+      <h2>Affiner</h2>
+
+      <div class="filter-group">
+        <p class="label">Invités minimum</p>
+        <div class="stepper">
+          <button type="button" id="guests-minus" aria-label="Diminuer">&minus;</button>
+          <span id="guests-val" class="nums">0</span>
+          <button type="button" id="guests-plus" aria-label="Augmenter">+</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <p class="label">Type de bateau</p>
+        <div class="chip-row" id="type-chips">
+          <button type="button" class="chip" aria-pressed="false" data-type="Moteur">Moteur</button>
+          <button type="button" class="chip" aria-pressed="false" data-type="Voile">Voile</button>
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <p class="label">Zone</p>
+        <div class="chip-row" id="zone-chips"></div>
+      </div>
+
+      <button class="btn btn-ghost btn-block" id="reset-filters" type="button">Réinitialiser</button>
+    </aside>
+
+    <div>
+      <div class="results-head">
+        <h2>Yachts disponibles</h2>
+        <span id="count" class="nums"></span>
+      </div>
+      <div class="grid" id="grid"></div>
+      <p class="empty" id="empty" hidden>Aucun yacht ne correspond à ces critères. Essayez d'élargir la zone ou le nombre d'invités.</p>
+    </div>
+  </section>
+
+  <section class="detail" id="view-detail" hidden>
+    <button class="back" id="backBtn" type="button">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Retour aux résultats
+    </button>
+
+    <div class="gallery" id="gallery">
+      <div class="gslide" id="gallerySlideA"></div>
+      <div class="gslide" id="gallerySlideB"></div>
+      <button class="gallery-arrow left" id="galleryPrev" type="button" aria-label="Photo précédente">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="gallery-arrow right" id="galleryNext" type="button" aria-label="Photo suivante">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="gallery-dots" id="galleryDots"></div>
+    </div>
+
+    <div class="detail-grid">
+      <div>
+        <div class="detail-head">
+          <div>
+            <h1 id="d-name"></h1>
+            <p class="muted" id="d-loc"></p>
+          </div>
+        </div>
+
+        <div class="spec-grid" id="d-specs"></div>
+
+        <p class="desc" id="d-desc"></p>
+        <div class="highlights" id="d-highlights"></div>
+      </div>
+
+      <div>
+        <div class="booking-card" id="bookingCard"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="profile-grid" id="view-profil" hidden>
+    <div class="profile-card" id="profileCard"></div>
+    <div>
+      <h2 style="margin-top:0;">Mes demandes</h2>
+      <div id="profileReservations"></div>
+    </div>
+  </section>
+
+  <section class="wrap" id="view-admin" hidden style="padding-block:30px 60px;">
+    <h2 style="margin-top:0;">Tableau de bord administrateur</h2>
+    <div id="adminStats" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:14px; margin-bottom:34px;"></div>
+
+    <h3 style="font-size:1.05rem;">Utilisateurs</h3>
+    <div id="adminUsers" style="margin-bottom:34px;"></div>
+
+    <h3 style="font-size:1.05rem;">Demandes</h3>
+    <div id="adminBookings" style="margin-bottom:34px;"></div>
+
+    <h3 style="font-size:1.05rem;">Ajouter un yacht au catalogue</h3>
+    <div id="adminAddYacht" style="max-width:520px;"></div>
+  </section>
+
+  <section class="legal-wrap wrap" id="view-legal" hidden>
+    <div class="legal-tabs" id="legalTabs">
+      <button type="button" data-doc="mentions" aria-selected="true">Mentions légales</button>
+      <button type="button" data-doc="cgu" aria-selected="false">Conditions générales</button>
+      <button type="button" data-doc="confidentialite" aria-selected="false">Confidentialité</button>
+      <button type="button" data-doc="cookies" aria-selected="false">Cookies</button>
+    </div>
+    <div class="legal-content" id="legalContent"></div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap" style="flex-direction:column; gap:14px; align-items:flex-start;">
+    <div style="display:flex; gap:18px; flex-wrap:wrap;">
+      <a href="#legal" data-doc="mentions">Mentions légales</a>
+      <a href="#legal" data-doc="cgu">Conditions générales</a>
+      <a href="#legal" data-doc="confidentialite">Confidentialité</a>
+      <a href="#legal" data-doc="cookies">Cookies</a>
+    </div>
+    <div style="width:100%;">
+      <span>&copy; 2026 Ancora</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    length: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 17h18M5 17V9l4-4h6l4 4v8" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    guests: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3.3 3.1-5 7-5s7 1.7 7 5M17 11c2.2.3 4 1.8 4 4" stroke-linecap="round"/></svg>',
+    cabins: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="10" width="18" height="9" rx="1"/><path d="M3 10l3-5h12l3 5M8 19v-4M16 19v-4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    crew: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="7" r="3"/><path d="M5 21c0-3.9 3.1-6 7-6s7 2.1 7 6" stroke-linecap="round"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke-linecap="round"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3v6c0 5-3.5 7.8-8 9-4.5-1.2-8-4-8-9V6l8-3z" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4" stroke-linecap="round"/></svg>'
+  };
+
+  var GRADIENTS = [
+    "linear-gradient(135deg,#1C3D4D,#0B1B24)",
+    "linear-gradient(135deg,#2B4A52,#12262C)",
+    "linear-gradient(135deg,#33455A,#121C28)",
+    "linear-gradient(135deg,#224035,#0E1C17)",
+    "linear-gradient(135deg,#3A3324,#15120B)",
+    "linear-gradient(135deg,#243B4A,#0F1920)"
+  ];
+
+  var API_BASE = ""; // le site est servi par la même API : chemins relatifs
+  var YACHTS = [];
+  var authToken = null;
+
+  var fmt = function(n){ return n.toLocaleString("fr-FR"); };
+
+  var state = { minGuests:0, types:new Set(), zones:new Set() };
+
+  // ---------- theme ----------
+  var root = document.documentElement, themeBtn = document.getElementById("themeToggle");
+  function applyThemeLabel(){
+    var explicit = root.getAttribute("data-theme");
+    var dark = explicit ? explicit === "dark" : true; // default canvas is dark-first
+    themeBtn.textContent = dark ? "Mode clair" : "Mode sombre";
+  }
+  themeBtn.addEventListener("click", function(){
+    var current = root.getAttribute("data-theme");
+    var currentlyDark = current ? current === "dark" : true;
+    root.setAttribute("data-theme", currentlyDark ? "light" : "dark");
+    applyThemeLabel();
+  });
+  applyThemeLabel();
+
+  // ---------- destination select + zone chips (remplis une fois les yachts chargés) ----------
+  var destSelect = document.getElementById("f-dest");
+  var zoneChipsEl = document.getElementById("zone-chips");
+  function populateFilters(){
+    destSelect.innerHTML = '<option value="">Toutes les zones</option>';
+    zoneChipsEl.innerHTML = "";
+    var zones = [];
+    YACHTS.forEach(function(y){ if(zones.indexOf(y.zone) === -1) zones.push(y.zone); });
+    zones.forEach(function(z){
+      var o = document.createElement("option"); o.value = z; o.textContent = z; destSelect.appendChild(o);
+    });
+    zones.forEach(function(z){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed","false"); b.dataset.zone = z; b.textContent = z;
+      zoneChipsEl.appendChild(b);
+    });
+  }
+
+  // ---------- card rendering ----------
+  var grid = document.getElementById("grid"), countEl = document.getElementById("count"), emptyEl = document.getElementById("empty");
+
+  function cardHTML(y, idx){
+    var slides = [0,1,2,3].map(function(n){ return '<div class="slide" style="background:'+GRADIENTS[(idx+n) % GRADIENTS.length]+'"></div>'; }).join("");
+    return '' +
+      '<article class="card" tabindex="0" role="button" data-id="'+y.id+'" aria-label="Voir '+y.name+'">' +
+        '<div class="card-media">' +
+          slides +
+          '<span class="tag">'+y.type+' &middot; '+y.length+' m</span>' +
+        '</div>' +
+        '<div class="card-body">' +
+          '<h3>'+y.name+'</h3>' +
+          '<p class="card-loc">'+y.port+', '+y.country+'</p>' +
+          '<div class="specs-row">' +
+            '<span>'+ICONS.guests+' '+y.guests+' invités</span>' +
+            '<span>'+ICONS.cabins+' '+y.cabins+' cabines</span>' +
+            '<span>'+ICONS.crew+' '+y.crew+' équipiers</span>' +
+          '</div>' +
+        '</div>' +
+      '</article>';
+  }
+
+  function matches(y){
+    if (y.guests < state.minGuests) return false;
+    if (state.types.size && !state.types.has(y.type)) return false;
+    if (state.zones.size && !state.zones.has(y.zone)) return false;
+    if (destSelect.value && y.zone !== destSelect.value) return false;
+    var guestFilter = document.getElementById("f-guests").value;
+    if (guestFilter && y.guests < parseInt(guestFilter,10)) return false;
+    var typeFilter = document.getElementById("f-type").value;
+    if (typeFilter && y.type !== typeFilter) return false;
+    return true;
+  }
+
+  function renderGrid(){
+    var list = YACHTS.filter(matches);
+    grid.innerHTML = list.map(function(y){ return cardHTML(y, YACHTS.indexOf(y)); }).join("");
+    countEl.textContent = list.length + (list.length === 1 ? " résultat" : " résultats");
+    emptyEl.hidden = list.length !== 0;
+    grid.hidden = list.length === 0;
+    Array.prototype.forEach.call(grid.querySelectorAll(".card"), function(card){
+      card.addEventListener("click", function(){ goTo(card.dataset.id); });
+      card.addEventListener("keydown", function(e){ if(e.key === "Enter" || e.key === " "){ e.preventDefault(); goTo(card.dataset.id); } });
+    });
+  }
+
+  // ---------- filters wiring ----------
+  var guestsVal = document.getElementById("guests-val");
+  document.getElementById("guests-minus").addEventListener("click", function(){
+    state.minGuests = Math.max(0, state.minGuests - 1); guestsVal.textContent = state.minGuests; renderGrid();
+  });
+  document.getElementById("guests-plus").addEventListener("click", function(){
+    state.minGuests = Math.min(16, state.minGuests + 1); guestsVal.textContent = state.minGuests; renderGrid();
+  });
+  document.getElementById("type-chips").addEventListener("click", function(e){
+    var chip = e.target.closest(".chip"); if(!chip) return;
+    var on = chip.getAttribute("aria-pressed") === "true";
+    chip.setAttribute("aria-pressed", String(!on));
+    if(on) state.types.delete(chip.dataset.type); else state.types.add(chip.dataset.type);
+    renderGrid();
+  });
+  zoneChipsEl.addEventListener("click", function(e){
+    var chip = e.target.closest(".chip"); if(!chip) return;
+    var on = chip.getAttribute("aria-pressed") === "true";
+    chip.setAttribute("aria-pressed", String(!on));
+    if(on) state.zones.delete(chip.dataset.zone); else state.zones.add(chip.dataset.zone);
+    renderGrid();
+  });
+  document.getElementById("reset-filters").addEventListener("click", function(){
+    state = { minGuests:0, types:new Set(), zones:new Set() };
+    guestsVal.textContent = "0";
+    Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){ c.setAttribute("aria-pressed","false"); });
+    destSelect.value = ""; document.getElementById("f-guests").value = ""; document.getElementById("f-type").value = "";
+    renderGrid();
+  });
+  document.getElementById("searchForm").addEventListener("submit", function(e){ e.preventDefault(); renderGrid(); document.getElementById("view-results").scrollIntoView({behavior:"smooth"}); });
+
+  // ---------- compte & authentification (vrai back-end : /api/auth) ----------
+  var loggedInUser = null, pendingInquiry = null, activeLegalDoc = "mentions";
+  var authOverlay = document.getElementById("authOverlay");
+
+  function roleLabel(code){ return code === "ADMIN" ? "Administrateur" : "Client"; }
+
+  function apiFetch(path, options){
+    options = options || {};
+    var headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+    if(authToken) headers["Authorization"] = "Bearer " + authToken;
+    return fetch(API_BASE + path, Object.assign({}, options, { headers: headers }))
+      .then(function(res){
+        return res.json().then(function(data){
+          if(!res.ok){ throw new Error(data && data.error ? data.error : "Erreur serveur"); }
+          return data;
+        });
+      });
+  }
+
+  function renderAccountArea(){
+    var el = document.getElementById("accountArea");
+    var adminLink = document.getElementById("adminLink");
+    if(adminLink) adminLink.hidden = !(loggedInUser && loggedInUser.role === "Administrateur");
+    if(loggedInUser){
+      var initial = (loggedInUser.name.trim().charAt(0) || "A").toUpperCase();
+      el.innerHTML = '<button class="account-chip" id="accountChipBtn" type="button"><span class="avatar">'+initial+'</span>'+loggedInUser.name.split(" ")[0]+'</button>';
+      document.getElementById("accountChipBtn").addEventListener("click", function(){ location.hash = "profil"; });
+    } else {
+      el.innerHTML = '<button class="btn btn-ghost" id="openAuthBtn" type="button">Se connecter</button>';
+      document.getElementById("openAuthBtn").addEventListener("click", function(){ openAuth("login"); });
+    }
+  }
+
+  function openAuth(tab){ authOverlay.hidden = false; setAuthTab(tab || "login"); }
+  function closeAuth(){ authOverlay.hidden = true; }
+
+  function showAuthError(msg){
+    var el = document.getElementById("authError");
+    if(el){ el.textContent = msg; el.hidden = !msg; }
+  }
+
+  function setAuthTab(tab){
+    document.getElementById("tabLogin").setAttribute("aria-selected", String(tab === "login"));
+    document.getElementById("tabSignup").setAttribute("aria-selected", String(tab === "signup"));
+    var body = document.getElementById("authBody");
+    if(tab === "login"){
+      body.innerHTML =
+        '<p class="muted" id="authError" style="font-size:.78rem; color:#C0564A;" hidden></p>' +
+        '<div class="form-row"><label for="au-email">E-mail</label><input type="email" id="au-email" placeholder="vous@exemple.com"></div>' +
+        '<div class="form-row"><label for="au-pass">Mot de passe</label><input type="password" id="au-pass" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
+        '<button class="btn btn-primary btn-block" id="doLogin" type="button">Se connecter</button>';
+      document.getElementById("doLogin").addEventListener("click", function(){
+        showAuthError("");
+        var email = document.getElementById("au-email").value.trim();
+        var pass = document.getElementById("au-pass").value;
+        if(!email || !pass){ showAuthError("Merci de renseigner e-mail et mot de passe."); return; }
+        apiFetch("/api/auth/login", { method:"POST", body: JSON.stringify({ email:email, password:pass }) })
+          .then(function(data){ onLoggedIn(data.user, data.token); })
+          .catch(function(err){ showAuthError(err.message); });
+      });
+    } else {
+      body.innerHTML =
+        '<p class="muted" id="authError" style="font-size:.78rem; color:#C0564A;" hidden></p>' +
+        '<div class="form-row"><label for="au-name">Nom complet</label><input type="text" id="au-name" placeholder="Jean Dupont"></div>' +
+        '<div class="form-row"><label for="au-email2">E-mail</label><input type="email" id="au-email2" placeholder="vous@exemple.com"></div>' +
+        '<div class="form-row"><label for="au-pass2">Mot de passe</label><input type="password" id="au-pass2" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
+        '<button class="btn btn-primary btn-block" id="doSignup" type="button">Créer mon compte</button>';
+      document.getElementById("doSignup").addEventListener("click", function(){
+        showAuthError("");
+        var name = document.getElementById("au-name").value.trim();
+        var email = document.getElementById("au-email2").value.trim();
+        var pass = document.getElementById("au-pass2").value;
+        if(!name || !email || !pass){ showAuthError("Merci de remplir tous les champs."); return; }
+        apiFetch("/api/auth/signup", { method:"POST", body: JSON.stringify({ name:name, email:email, password:pass }) })
+          .then(function(data){ onLoggedIn(data.user, data.token); })
+          .catch(function(err){ showAuthError(err.message); });
+      });
+    }
+  }
+
+  // Normalise l'objet utilisateur renvoyé par l'API (incluant l'état d'abonnement).
+  function applyUser(user){
+    loggedInUser = {
+      name: user.name, email: user.email, role: roleLabel(user.role), roleCode: user.role,
+      subscriptionStatus: user.subscriptionStatus || "none",
+      subscriptionPlan: user.subscriptionPlan || null,
+      subscriptionCurrentPeriodEnd: user.subscriptionCurrentPeriodEnd || null
+    };
+  }
+
+  // Le catalogue est consultable par tous. Seule l'envoi d'une demande de mise
+  // en relation nécessite un compte Client avec un abonnement actif (ou en
+  // essai) ; l'Administrateur y a toujours accès.
+  function hasAccess(){
+    if(!loggedInUser) return false;
+    if(loggedInUser.roleCode === "ADMIN") return true;
+    return loggedInUser.subscriptionStatus === "active" || loggedInUser.subscriptionStatus === "trialing";
+  }
+
+  function onLoggedIn(user, token){
+    authToken = token;
+    try{ localStorage.setItem("ancora_token", token); } catch(e){}
+    applyUser(user);
+    renderAccountArea();
+    closeAuth();
+    if(pendingInquiry){
+      if(hasAccess()){ var y = pendingInquiry; pendingInquiry = null; openInquiry(y); }
+      else { location.hash = "abonnement"; }
+    } else {
+      route();
+    }
+  }
+
+  function logout(){
+    loggedInUser = null; authToken = null;
+    try{ localStorage.removeItem("ancora_token"); } catch(e){}
+    renderAccountArea(); history.pushState(null,"",location.pathname+location.search); route();
+  }
+
+  function restoreSession(){
+    var token;
+    try{ token = localStorage.getItem("ancora_token"); } catch(e){ token = null; }
+    if(!token) return Promise.resolve();
+    authToken = token;
+    return apiFetch("/api/auth/me")
+      .then(function(data){ applyUser(data.user); renderAccountArea(); })
+      .catch(function(){ authToken = null; try{ localStorage.removeItem("ancora_token"); } catch(e){} });
+  }
+
+  document.getElementById("authClose").addEventListener("click", closeAuth);
+  authOverlay.addEventListener("click", function(e){ if(e.target === authOverlay) closeAuth(); });
+  document.getElementById("tabLogin").addEventListener("click", function(){ setAuthTab("login"); });
+  document.getElementById("tabSignup").addEventListener("click", function(){ setAuthTab("signup"); });
+  document.getElementById("brandHome").addEventListener("click", function(e){ e.preventDefault(); history.pushState(null,"",location.pathname+location.search); showList(); });
+  document.getElementById("adminLink").addEventListener("click", function(e){ e.preventDefault(); location.hash = "admin"; });
+
+  renderAccountArea();
+
+  // ---------- mentions légales, CGU, confidentialité, cookies ----------
+  var LEGAL_DOCS = {
+    mentions: { title:"Mentions légales", html:
+      '<p class="note">Modèle de départ, à faire valider par un professionnel du droit avant mise en ligne réelle.</p>' +
+      '<p>Ancora est un projet en développement. Dénomination sociale, forme juridique, siège social, numéro d\'entreprise et capital social seront complétés lors de l\'immatriculation de la société.</p>' +
+      '<h3>Directeur de la publication</h3><p>À compléter.</p>' +
+      '<h3>Hébergement</h3><p>À compléter une fois l\'hébergeur choisi.</p>' +
+      '<h3>Contact</h3><p>contact@ancora.example</p>' },
+    cgu: { title:"Conditions générales d'utilisation", html:
+      '<p class="note">Modèle de départ, à faire valider par un professionnel du droit avant mise en ligne réelle.</p>' +
+      '<ol>' +
+      '<li><b>Objet.</b> Ancora met en relation des clients et des propriétaires de yachts avec équipage. Le site présente des fiches détaillées des navires et permet d\'envoyer une demande de renseignement ; aucune réservation ni aucun paiement n\'est effectué sur le site.</li>' +
+      '<li><b>Rôle d\'intermédiaire.</b> Ancora agit comme un service de mise en relation et de communication. Les conditions définitives (tarif, disponibilités, modalités) sont négociées et convenues directement entre le client et le propriétaire, en dehors du site, de même que le paiement.</li>' +
+      '<li><b>Demande de renseignement.</b> L\'envoi d\'une demande via le site n\'engage ni le client ni le propriétaire ; elle a pour seul objet d\'initier le contact. Ancora s\'efforce de transmettre une réponse personnalisée sous 24h.</li>' +
+      '<li><b>Tarifs.</b> Les tarifs ne sont pas affichés sur le site et sont communiqués sur demande, en fonction de la période, du nombre d\'invités et des prestations souhaitées.</li>' +
+      '<li><b>Responsabilité.</b> Ancora n\'est pas propriétaire des navires et n\'est pas partie au contrat de location conclu entre le client et le propriétaire ; la responsabilité liée à la navigation, à la sécurité à bord, au paiement et à l\'exécution du contrat incombe aux parties elles-mêmes.</li>' +
+      '<li><b>Vérification.</b> Chaque navire et chaque propriétaire font l\'objet d\'une vérification avant la mise en ligne de l\'annonce (identité, assurance, conformité du navire).</li>' +
+      '<li><b>Droit applicable.</b> À préciser lors de l\'immatriculation de la société.</li>' +
+      '</ol>' },
+    confidentialite: { title:"Politique de confidentialité", html:
+      '<p class="note">Modèle de départ, à faire valider par un professionnel du droit avant mise en ligne réelle.</p>' +
+      '<h3>Données collectées</h3><p>Identité et coordonnées (nom, e-mail, téléphone), contenu des demandes de renseignement envoyées aux propriétaires, et pour les propriétaires, les documents d\'identité et justificatifs requis pour la vérification. Ancora ne traite ni ne stocke aucune donnée de paiement : aucun paiement n\'a lieu sur le site.</p>' +
+      '<h3>Finalités</h3><p>Gestion des comptes, mise en relation entre clients et propriétaires, prévention de la fraude, suivi des demandes en cours.</p>' +
+      '<h3>Conservation</h3><p>Les données sont conservées pendant la durée de la relation avec Ancora, puis archivées selon les durées légales applicables.</p>' +
+      '<h3>Vos droits</h3><p>Conformément au RGPD, vous disposez d\'un droit d\'accès, de rectification, d\'effacement et d\'opposition. Pour l\'exercer : contact@ancora.example.</p>' +
+      '<h3>Sous-traitants</h3><p>Hébergeur du site.</p>' },
+    cookies: { title:"Politique de cookies", html:
+      '<p class="note">Modèle de départ, à faire valider par un professionnel du droit avant mise en ligne réelle.</p>' +
+      '<p>Ce site utilise uniquement des cookies techniques nécessaires à son fonctionnement (maintien de la session, mémorisation du thème clair/sombre). Aucun cookie publicitaire ou de mesure d\'audience tiers n\'est utilisé à ce stade.</p>' +
+      '<p>Vous pouvez supprimer ou bloquer ces cookies depuis les paramètres de votre navigateur ; certaines fonctionnalités du site pourraient alors ne plus fonctionner correctement.</p>' }
+  };
+
+  function renderLegal(){
+    Array.prototype.forEach.call(document.querySelectorAll("#legalTabs button"), function(b){
+      b.setAttribute("aria-selected", String(b.dataset.doc === activeLegalDoc));
+    });
+    var doc = LEGAL_DOCS[activeLegalDoc];
+    document.getElementById("legalContent").innerHTML = "<h2>"+doc.title+"</h2>" + doc.html;
+  }
+  document.getElementById("legalTabs").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    activeLegalDoc = b.dataset.doc; renderLegal();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('footer a[data-doc]'), function(a){
+    a.addEventListener("click", function(e){
+      e.preventDefault();
+      activeLegalDoc = a.dataset.doc;
+      location.hash = "legal";
+      route();
+    });
+  });
+
+  // ---------- mon profil ----------
+  var SUB_STATUS_LABEL = {
+    active: "Abonnement actif", trialing: "Période d'essai",
+    past_due: "Paiement en échec", canceled: "Abonnement annulé", none: "Aucun abonnement"
+  };
+
+  function renderProfil(){
+    var initial = (loggedInUser.name.trim().charAt(0) || "A").toUpperCase();
+    var subBlock = "";
+    if(loggedInUser.roleCode === "CLIENT"){
+      var statusLabel = SUB_STATUS_LABEL[loggedInUser.subscriptionStatus] || loggedInUser.subscriptionStatus;
+      var planLabel = loggedInUser.subscriptionPlan === "annual" ? " (annuel)" : (loggedInUser.subscriptionPlan === "monthly" ? " (mensuel)" : "");
+      subBlock =
+        '<p class="muted" style="font-size:.8rem; margin:14px 0 4px;">'+statusLabel+planLabel+'</p>' +
+        '<p class="muted" id="subError" style="font-size:.78rem; color:#C0564A;" hidden></p>' +
+        '<button class="btn btn-ghost btn-block" id="manageSubBtn" type="button">Gérer mon abonnement</button>';
+    }
+    document.getElementById("profileCard").innerHTML =
+      '<div class="avatar-lg">'+initial+'</div>' +
+      '<h3 style="margin:0;">'+loggedInUser.name+'</h3>' +
+      '<p class="muted" style="font-size:.84rem; margin:4px 0;">'+loggedInUser.email+'</p>' +
+      '<span class="role">'+loggedInUser.role+'</span>' +
+      subBlock +
+      '<button class="btn btn-ghost btn-block" id="logoutBtn" type="button" style="margin-top:18px;">Se déconnecter</button>';
+    document.getElementById("logoutBtn").addEventListener("click", logout);
+    var manageBtn = document.getElementById("manageSubBtn");
+    if(manageBtn){
+      manageBtn.addEventListener("click", function(){
+        var errEl = document.getElementById("subError");
+        errEl.hidden = true;
+        manageBtn.disabled = true; manageBtn.textContent = "Redirection…";
+        apiFetch("/api/subscribe/portal", { method:"POST" })
+          .then(function(data){ location.href = data.url; })
+          .catch(function(err){
+            errEl.textContent = err.message; errEl.hidden = false;
+            manageBtn.disabled = false; manageBtn.textContent = "Gérer mon abonnement";
+          });
+      });
+    }
+
+    var listEl = document.getElementById("profileReservations");
+    listEl.innerHTML = '<p class="muted" style="font-size:.84rem;">Chargement de vos demandes&hellip;</p>';
+    apiFetch("/api/inquiries/me")
+      .then(function(data){
+        listEl.innerHTML = data.inquiries.length ? data.inquiries.map(function(b){
+          var dates = b.startDate && b.endDate ? ' &middot; du '+b.startDate+' au '+b.endDate : '';
+          return '<div class="res-item">' +
+            '<div><div class="name">'+b.yacht.name+'</div><div class="meta">'+b.yacht.port+', '+b.yacht.country+dates+'</div></div>' +
+            '<span class="badge-sample">'+b.reference+'</span>' +
+          '</div>';
+        }).join("") : '<p class="muted" style="font-size:.84rem;">Aucune demande pour le moment.</p>';
+      })
+      .catch(function(){
+        listEl.innerHTML = '<p class="muted" style="font-size:.84rem;">Impossible de charger vos demandes pour le moment.</p>';
+      });
+  }
+
+  // ---------- ajouter un yacht au catalogue (administrateur uniquement) ----------
+  function renderAddYachtForm(){
+    var el = document.getElementById("adminAddYacht");
+    el.innerHTML =
+      '<p class="muted" id="ownerError" style="font-size:.8rem; color:#C0564A;" hidden></p>' +
+      '<p id="ownerSuccess" style="font-size:.84rem; color:var(--good);" hidden></p>' +
+      '<div class="form-row"><label for="ow-name">Nom du yacht</label><input type="text" id="ow-name" placeholder="Ex. Séraphine"></div>' +
+      '<div class="two-col">' +
+        '<div class="form-row"><label for="ow-port">Port d\'attache</label><input type="text" id="ow-port" placeholder="Ex. Antibes"></div>' +
+        '<div class="form-row"><label for="ow-country">Pays</label><input type="text" id="ow-country" placeholder="Ex. France"></div>' +
+      '</div>' +
+      '<div class="form-row"><label for="ow-zone">Zone de navigation</label><input type="text" id="ow-zone" placeholder="Ex. Côte d\'Azur"></div>' +
+      '<div class="two-col">' +
+        '<div class="form-row"><label for="ow-type">Type</label><select id="ow-type"><option value="Moteur">Moteur</option><option value="Voile">Voile</option></select></div>' +
+        '<div class="form-row"><label for="ow-year">Année</label><input type="number" id="ow-year" min="1950" max="2030" placeholder="2022"></div>' +
+      '</div>' +
+      '<div class="two-col">' +
+        '<div class="form-row"><label for="ow-length">Longueur (m)</label><input type="number" id="ow-length" min="1" step="0.1" placeholder="35"></div>' +
+        '<div class="form-row"><label for="ow-cabins">Cabines</label><input type="number" id="ow-cabins" min="1" placeholder="5"></div>' +
+      '</div>' +
+      '<div class="two-col">' +
+        '<div class="form-row"><label for="ow-guests">Invités max.</label><input type="number" id="ow-guests" min="1" placeholder="10"></div>' +
+        '<div class="form-row"><label for="ow-crew">Équipage</label><input type="number" id="ow-crew" min="0" placeholder="6"></div>' +
+      '</div>' +
+      '<div class="form-row"><label for="ow-price">Tarif / semaine (&euro;)</label><input type="number" id="ow-price" min="1" placeholder="140000"></div>' +
+      '<div class="form-row"><label for="ow-desc">Description</label><input type="text" id="ow-desc" placeholder="Quelques lignes sur le yacht"></div>' +
+      '<div class="form-row"><label for="ow-highlights">Points forts (séparés par des virgules)</label><input type="text" id="ow-highlights" placeholder="Jacuzzi, Jet-skis inclus, Chef à bord"></div>' +
+      '<button class="btn btn-primary btn-block" id="ownerSubmit" type="button">Publier ce yacht</button>';
+
+    document.getElementById("ownerSubmit").addEventListener("click", function(){
+      var errEl = document.getElementById("ownerError"), okEl = document.getElementById("ownerSuccess");
+      errEl.hidden = true; okEl.hidden = true;
+      var payload = {
+        name: document.getElementById("ow-name").value.trim(),
+        port: document.getElementById("ow-port").value.trim(),
+        country: document.getElementById("ow-country").value.trim(),
+        zone: document.getElementById("ow-zone").value.trim(),
+        type: document.getElementById("ow-type").value,
+        year: document.getElementById("ow-year").value,
+        lengthM: document.getElementById("ow-length").value,
+        cabins: document.getElementById("ow-cabins").value,
+        maxGuests: document.getElementById("ow-guests").value,
+        crew: document.getElementById("ow-crew").value,
+        pricePerWeek: document.getElementById("ow-price").value,
+        description: document.getElementById("ow-desc").value.trim(),
+        highlights: document.getElementById("ow-highlights").value.split(",").map(function(s){ return s.trim(); }).filter(Boolean)
+      };
+      if(!payload.name || !payload.port || !payload.country || !payload.zone){
+        errEl.textContent = "Merci de remplir au moins le nom, le port, le pays et la zone.";
+        errEl.hidden = false;
+        return;
+      }
+      var btn = document.getElementById("ownerSubmit");
+      btn.disabled = true; btn.textContent = "Publication en cours…";
+      apiFetch("/api/yachts", { method:"POST", body: JSON.stringify(payload) })
+        .then(function(res){
+          YACHTS.push(res.yacht);
+          populateFilters();
+          okEl.innerHTML = 'Yacht publié avec succès. <a href="#'+res.yacht.id+'" style="color:var(--fg); text-decoration:underline;">Voir la fiche</a>';
+          okEl.hidden = false;
+        })
+        .catch(function(err){ errEl.textContent = err.message; errEl.hidden = false; })
+        .then(function(){ btn.disabled = false; btn.textContent = "Publier ce yacht"; });
+    });
+  }
+
+  // ---------- routing ----------
+  var viewHome = document.getElementById("view-home"), viewResults = document.getElementById("view-results"), viewDetail = document.getElementById("view-detail"), viewProfil = document.getElementById("view-profil"), viewLegal = document.getElementById("view-legal"), viewAdmin = document.getElementById("view-admin"), viewSubscribe = document.getElementById("view-subscribe");
+
+  function goTo(id){ location.hash = id; }
+  document.getElementById("backBtn").addEventListener("click", function(){ history.pushState(null,"",location.pathname+location.search); showList(); });
+
+  function showList(){
+    clearGalleryTimer();
+    viewHome.hidden = false; viewResults.hidden = false; viewDetail.hidden = true; viewProfil.hidden = true; viewLegal.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = true;
+  }
+
+  function showProfil(){
+    if(!loggedInUser){ openAuth("login"); showList(); return; }
+    clearGalleryTimer();
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = true; viewLegal.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = true; viewProfil.hidden = false;
+    renderProfil();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function showLegal(){
+    clearGalleryTimer();
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = true; viewProfil.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = true; viewLegal.hidden = false;
+    renderLegal();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function showAdmin(){
+    if(!loggedInUser || loggedInUser.role !== "Administrateur"){ showList(); return; }
+    clearGalleryTimer();
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = true; viewProfil.hidden = true; viewLegal.hidden = true; viewSubscribe.hidden = true; viewAdmin.hidden = false;
+    renderAdmin();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function showSubscribe(){
+    if(!loggedInUser){ openAuth("login"); showList(); return; }
+    clearGalleryTimer();
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = true; viewProfil.hidden = true; viewLegal.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = false;
+    renderSubscribe();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function showSubscribeLoading(msg){
+    clearGalleryTimer();
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = true; viewProfil.hidden = true; viewLegal.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = false;
+    document.getElementById("subscribeContent").innerHTML =
+      '<p class="kicker">Un instant&hellip;</p><h1>'+msg+'</h1>' +
+      '<p class="sub">Merci de patienter quelques secondes.</p>';
+  }
+
+  function renderSubscribe(){
+    var el = document.getElementById("subscribeContent");
+
+    if(hasAccess()){
+      var statusLabel = SUB_STATUS_LABEL[loggedInUser.subscriptionStatus] || loggedInUser.subscriptionStatus;
+      var planLabel = loggedInUser.subscriptionPlan === "annual" ? " (annuel)" : (loggedInUser.subscriptionPlan === "monthly" ? " (mensuel)" : "");
+      el.innerHTML =
+        '<h1>Vous êtes abonné</h1>' +
+        '<p class="sub">'+statusLabel+planLabel+'</p>' +
+        '<div style="display:flex; gap:12px; flex-wrap:wrap;">' +
+          '<button class="btn btn-primary" id="subBrowse" type="button">Voir le catalogue</button>' +
+          '<button class="btn btn-ghost" id="subManage" type="button">Gérer mon abonnement</button>' +
+        '</div>';
+      document.getElementById("subBrowse").addEventListener("click", function(){ history.pushState(null,"",location.pathname+location.search); showList(); });
+      document.getElementById("subManage").addEventListener("click", function(){ openBillingPortal(document.getElementById("subManage")); });
+      return;
+    }
+
+    var statusNote = "";
+    if(loggedInUser.subscriptionStatus === "past_due"){
+      statusNote = '<p class="muted" style="color:#C0564A; font-size:.84rem; margin:0 0 16px;">Votre dernier paiement a échoué. Merci de mettre à jour votre moyen de paiement.</p>';
+    } else if(loggedInUser.subscriptionStatus === "canceled"){
+      statusNote = '<p class="muted" style="font-size:.84rem; margin:0 0 16px;">Votre abonnement a été annulé. Réabonnez-vous pour retrouver l\'accès à la mise en relation.</p>';
+    }
+
+    el.innerHTML =
+      '<h1>Choisissez votre abonnement</h1>' +
+      statusNote +
+      '<p class="muted" id="subscribeError" style="font-size:.82rem; color:#C0564A; margin:0 0 14px;" hidden></p>' +
+      '<div class="plan-grid">' +
+        '<div class="plan-card">' +
+          '<h3>Mensuel</h3><p class="muted" style="font-size:.84rem;">Sans engagement, annulable à tout moment.</p>' +
+          '<button class="btn btn-primary btn-block" id="planMonthly" type="button">S\'abonner (mensuel)</button>' +
+        '</div>' +
+        '<div class="plan-card">' +
+          '<h3>Annuel</h3><p class="muted" style="font-size:.84rem;">Un tarif avantageux réglé une fois par an.</p>' +
+          '<button class="btn btn-primary btn-block" id="planAnnual" type="button">S\'abonner (annuel)</button>' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn-ghost" id="subscribeLogout" type="button" style="margin-top:20px;">Se déconnecter</button>';
+
+    document.getElementById("planMonthly").addEventListener("click", function(){ startCheckout("monthly"); });
+    document.getElementById("planAnnual").addEventListener("click", function(){ startCheckout("annual"); });
+    document.getElementById("subscribeLogout").addEventListener("click", logout);
+  }
+
+  function startCheckout(plan){
+    var btn = document.getElementById(plan === "annual" ? "planAnnual" : "planMonthly");
+    var errEl = document.getElementById("subscribeError");
+    errEl.hidden = true;
+    btn.disabled = true; btn.textContent = "Redirection…";
+    apiFetch("/api/subscribe/checkout", { method:"POST", body: JSON.stringify({ plan: plan }) })
+      .then(function(data){ location.href = data.url; })
+      .catch(function(err){
+        errEl.textContent = err.message; errEl.hidden = false;
+        btn.disabled = false; btn.textContent = plan === "annual" ? "S'abonner (annuel)" : "S'abonner (mensuel)";
+      });
+  }
+
+  function openBillingPortal(btn){
+    var originalLabel = btn.textContent;
+    btn.disabled = true; btn.textContent = "Redirection…";
+    apiFetch("/api/subscribe/portal", { method:"POST" })
+      .then(function(data){ location.href = data.url; })
+      .catch(function(err){
+        alert(err.message);
+        btn.disabled = false; btn.textContent = originalLabel;
+      });
+  }
+
+  // Après un retour de Stripe Checkout (succès), l'activation de l'abonnement
+  // se fait par webhook côté serveur et peut prendre quelques secondes :
+  // on recharge /api/auth/me jusqu'à ce que l'accès soit actif.
+  function pollForActiveSubscription(attempts){
+    attempts = attempts || 0;
+    return apiFetch("/api/auth/me").then(function(data){
+      applyUser(data.user);
+      renderAccountArea();
+      if(hasAccess()){
+        if(pendingInquiry){
+          var y = pendingInquiry; pendingInquiry = null;
+          history.replaceState(null, "", location.pathname + location.search + "#" + y.id);
+          showDetail(y);
+          openInquiry(y);
+        } else {
+          route();
+        }
+        return;
+      }
+      if(attempts >= 8){ route(); return; }
+      return new Promise(function(resolve){ setTimeout(resolve, 1500); }).then(function(){ return pollForActiveSubscription(attempts + 1); });
+    });
+  }
+
+  function renderAdmin(){
+    var statsEl = document.getElementById("adminStats"), usersEl = document.getElementById("adminUsers"), bookingsEl = document.getElementById("adminBookings");
+    statsEl.innerHTML = '<p class="muted">Chargement&hellip;</p>';
+    usersEl.innerHTML = ""; bookingsEl.innerHTML = "";
+    Promise.all([
+      apiFetch("/api/admin/stats"),
+      apiFetch("/api/admin/users"),
+      apiFetch("/api/admin/inquiries")
+    ]).then(function(results){
+      var stats = results[0].stats, users = results[1].users, bookings = results[2].inquiries;
+      statsEl.innerHTML = [
+        {k:"Utilisateurs", v:stats.totalUsers},
+        {k:"Clients", v:stats.totalClients},
+        {k:"Abonnés actifs", v:stats.totalActiveSubscribers},
+        {k:"Yachts", v:stats.totalYachts},
+        {k:"Demandes", v:stats.totalInquiries}
+      ].map(function(s){
+        return '<div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px;">' +
+          '<div class="nums" style="font-family:var(--font-display); font-size:1.5rem; font-weight:600;">'+s.v+'</div>' +
+          '<div style="font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-top:4px;">'+s.k+'</div>' +
+        '</div>';
+      }).join("");
+
+      usersEl.innerHTML = users.length ? users.map(function(u){
+        var subInfo = u.role === "CLIENT" ? (' &middot; ' + (SUB_STATUS_LABEL[u.subscriptionStatus] || u.subscriptionStatus)) : '';
+        return '<div class="res-item">' +
+          '<div><div class="name">'+u.name+'</div><div class="meta">'+u.email+' &middot; '+roleLabel(u.role)+subInfo+'</div></div>' +
+          '<span class="badge-sample">'+new Date(u.createdAt).toLocaleDateString("fr-FR")+'</span>' +
+        '</div>';
+      }).join("") : '<p class="muted">Aucun utilisateur pour le moment.</p>';
+
+      bookingsEl.innerHTML = bookings.length ? bookings.map(function(b){
+        var dates = b.startDate && b.endDate ? ' &middot; du '+b.startDate+' au '+b.endDate : ' &middot; dates non précisées';
+        var contact = b.user.name+' ('+b.user.email+(b.phone ? ', '+b.phone : '')+')';
+        var msg = b.message ? '<div class="meta" style="margin-top:2px;">&laquo; '+b.message+' &raquo;</div>' : '';
+        return '<div class="res-item">' +
+          '<div><div class="name">'+b.yacht.name+'</div><div class="meta">'+contact+dates+'</div>'+msg+'</div>' +
+          '<span class="badge-sample">'+b.reference+'</span>' +
+        '</div>';
+      }).join("") : '<p class="muted">Aucune demande pour le moment.</p>';
+
+      renderAddYachtForm();
+    }).catch(function(err){
+      statsEl.innerHTML = '<p class="muted">Impossible de charger le tableau de bord : '+err.message+'</p>';
+    });
+  }
+
+  // ---------- carrousel photos (fiche bateau) ----------
+  var galleryTimer = null;
+  function clearGalleryTimer(){ if(galleryTimer){ clearInterval(galleryTimer); galleryTimer = null; } }
+
+  function initGallery(y){
+    clearGalleryTimer();
+    var base = YACHTS.indexOf(y);
+    var slides = [0,1,2,3,4,5].map(function(n){ return GRADIENTS[(base+n) % GRADIENTS.length]; });
+    var slideA = document.getElementById("gallerySlideA"), slideB = document.getElementById("gallerySlideB");
+    var current = 0, showingA = true;
+    slideA.style.background = slides[0]; slideA.classList.add("on"); slideB.classList.remove("on");
+
+    function renderDots(i){
+      document.getElementById("galleryDots").innerHTML = slides.map(function(_, n){
+        return '<button type="button" class="gdot'+(n===i?' on':'')+'" data-i="'+n+'" aria-label="Photo '+(n+1)+'"></button>';
+      }).join("");
+    }
+    function paint(i){
+      var next = showingA ? slideB : slideA;
+      var prevEl = showingA ? slideA : slideB;
+      next.style.background = slides[i];
+      next.classList.add("on");
+      prevEl.classList.remove("on");
+      showingA = !showingA;
+      renderDots(i);
+    }
+    function goTo(i){ current = (i + slides.length) % slides.length; paint(current); }
+
+    renderDots(0);
+    document.getElementById("galleryPrev").onclick = function(){ goTo(current - 1); };
+    document.getElementById("galleryNext").onclick = function(){ goTo(current + 1); };
+    document.getElementById("galleryDots").onclick = function(e){
+      var d = e.target.closest(".gdot"); if(!d) return;
+      goTo(Number(d.dataset.i));
+    };
+    galleryTimer = setInterval(function(){ goTo(current + 1); }, 3500);
+  }
+
+  function showDetail(y){
+    viewHome.hidden = true; viewResults.hidden = true; viewDetail.hidden = false; viewProfil.hidden = true; viewLegal.hidden = true; viewAdmin.hidden = true; viewSubscribe.hidden = true;
+
+    initGallery(y);
+
+    document.getElementById("d-name").textContent = y.name;
+    document.getElementById("d-loc").textContent = y.port + ", " + y.country + " — " + y.zone;
+    document.getElementById("d-desc").textContent = y.desc;
+    document.getElementById("d-highlights").innerHTML = y.highlights.map(function(h){ return "<span>"+h+"</span>"; }).join("");
+
+    document.getElementById("d-specs").innerHTML = [
+      {k:"Longueur", v:y.length+" m", icon:ICONS.length},
+      {k:"Invités max.", v:y.guests, icon:ICONS.guests},
+      {k:"Cabines", v:y.cabins, icon:ICONS.cabins},
+      {k:"Équipage", v:y.crew, icon:ICONS.crew}
+    ].map(function(s){
+      return '<div class="spec-item">'+s.icon+'<span class="v nums">'+s.v+'</span><span class="k">'+s.k+'</span></div>';
+    }).join("");
+
+    renderBookingCard(y);
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function renderBookingCard(y){
+    var card = document.getElementById("bookingCard");
+    card.innerHTML =
+      '<button class="btn btn-primary btn-block" id="startInquiry" type="button">Demander des informations</button>';
+    document.getElementById("startInquiry").addEventListener("click", function(){
+      if(!loggedInUser){ pendingInquiry = y; openAuth("login"); return; }
+      if(!hasAccess()){ pendingInquiry = y; location.hash = "abonnement"; return; }
+      openInquiry(y);
+    });
+  }
+
+  // ---------- demande de renseignement (un seul formulaire, sans dates) ----------
+  function openInquiry(y){
+    var card = document.getElementById("bookingCard");
+    var data = { guests:"", name:"", email:"", phone:"", message:"" };
+    var inquiryResult = null, inquiryError = "";
+    if(loggedInUser){ data.name = loggedInUser.name; data.email = loggedInUser.email; }
+
+    function render(){
+      var body = "";
+
+      if(!inquiryResult){
+        body =
+          '<h3 style="margin:0 0 14px; font-size:1.05rem;">Demande de mise en relation</h3>' +
+          (inquiryError ? '<p class="muted" style="font-size:.8rem;color:#C0564A;">'+inquiryError+'</p>' : '') +
+          '<div class="form-row"><label for="bk-name">Nom complet</label><input type="text" id="bk-name" value="'+data.name+'" placeholder="Jean Dupont"></div>' +
+          '<div class="form-row"><label for="bk-email">E-mail</label><input type="email" id="bk-email" value="'+data.email+'" placeholder="vous@exemple.com"></div>' +
+          '<div class="form-row"><label for="bk-phone">Téléphone</label><input type="tel" id="bk-phone" value="'+data.phone+'" placeholder="+32 4xx xx xx xx"></div>' +
+          '<div class="form-row"><label for="bk-guests">Invités</label><input type="number" id="bk-guests" min="1" max="'+y.guests+'" value="'+data.guests+'" placeholder="Max '+y.guests+'"></div>' +
+          '<div class="form-row"><label for="bk-message">Message (facultatif)</label><input type="text" id="bk-message" value="'+data.message+'" placeholder="Occasion, préférences, questions…"></div>' +
+          '<button class="btn btn-primary btn-block" id="sendInquiry" type="button">Envoyer</button>';
+      } else {
+        body =
+          '<div class="confirm">' + ICONS.check.replace('<svg ','<svg aria-hidden="true" ') +
+          '<p>Demande envoyée</p>' +
+          '<p class="ref nums">'+inquiryResult.reference+'</p>' +
+          '<button class="btn btn-ghost btn-block" id="closeConfirm" type="button" style="margin-top:12px;">Fermer</button>' +
+          '</div>';
+      }
+
+      card.innerHTML = body;
+
+      if(!inquiryResult){
+        document.getElementById("sendInquiry").addEventListener("click", function(){
+          data.name = document.getElementById("bk-name").value;
+          data.email = document.getElementById("bk-email").value;
+          data.phone = document.getElementById("bk-phone").value.trim();
+          data.guests = document.getElementById("bk-guests").value;
+          data.message = document.getElementById("bk-message").value;
+          if(!data.phone){ inquiryError = "Merci d'indiquer un numéro de téléphone."; render(); return; }
+          var btn = document.getElementById("sendInquiry");
+          btn.disabled = true; btn.textContent = "Envoi en cours…";
+          apiFetch("/api/inquiries", { method:"POST", body: JSON.stringify({
+            yachtId: y.id, guests: Number(data.guests) || null, phone: data.phone, message: data.message || null
+          }) })
+            .then(function(res){ inquiryResult = res.inquiry; inquiryError = ""; render(); })
+            .catch(function(err){ inquiryError = err.message; render(); });
+        });
+      } else {
+        document.getElementById("closeConfirm").addEventListener("click", function(){ renderBookingCard(y); });
+      }
+    }
+    render();
+    card.scrollIntoView({behavior:"smooth", block:"center"});
+  }
+
+  function route(){
+    var id = location.hash.replace("#","");
+    if(id === "legal"){ showLegal(); return; }
+    if(id === "profil"){ showProfil(); return; }
+    if(id === "admin"){ showAdmin(); return; }
+    if(id === "abonnement"){ showSubscribe(); return; }
+    var y = YACHTS.filter(function(x){ return x.id === id; })[0];
+    if(y) showDetail(y); else showList();
+  }
+  window.addEventListener("hashchange", route);
+
+  function loadYachts(){
+    return apiFetch("/api/yachts").then(function(data){
+      YACHTS = data.yachts;
+      populateFilters();
+    });
+  }
+
+  Promise.all([loadYachts(), restoreSession()])
+    .catch(function(err){ console.error("Chargement initial impossible :", err); })
+    .then(function(){
+      renderGrid();
+      var params = new URL(location.href).searchParams;
+      var checkoutParam = params.get("checkout");
+      if(checkoutParam){
+        history.replaceState(null, "", location.pathname + location.hash);
+      }
+      if(checkoutParam === "success" && loggedInUser){
+        showSubscribeLoading("Finalisation de votre abonnement…");
+        return pollForActiveSubscription();
+      }
+      route();
+    });
+})();
+</script>
